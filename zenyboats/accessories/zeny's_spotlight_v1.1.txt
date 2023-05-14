@@ -1,0 +1,61 @@
+@name Zeny's Spotlight
+@inputs Lamp:wirelink Pod:entity
+@outputs 
+@persist On
+@trigger 
+
+#[	INSTRUCTIONS:
+	-spawn e2 where you want your spotlight to be
+	-wire Lamp[WIRELINK] to a wire lamp with settings of your choice
+	-wire Pod[ENTITY] to any chair/pod you wish to control the light from.
+	
+	CONTROLS:
+	-WASD to rotate/point lamp
+	-LMB to turn on/off
+]#
+
+
+
+
+
+
+if (first()|dupefinished()) {
+    E = entity()
+    E:setAlpha(0)
+    if (->Lamp) {
+        LampE = Lamp:entity()
+        timer("parent",100)
+        LampE:setPos(E:toWorld(vec(5,0,16))) 
+        LampE:setAng(E:toWorld(ang(0,0,0)))
+        LampE:parentTo()
+        LampE:setMaterial("color")
+
+}
+    A = 0 
+    holoCreate(A)
+    holoModel(A,"models/props_wasteland/light_spotlight01_base.mdl")
+    holoPos(A,E:toWorld(vec(0,0,9)))
+    holoAng(A,E:toWorld(ang(0,0,0)))
+    holoParent(A,E)
+
+    A = 1
+    holoCreate(A)
+    holoModel(A,"models/props_wasteland/light_spotlight01_lamp.mdl")
+    holoPos(A,E:toWorld(vec(0,0,12)))
+    holoAng(A,E:toWorld(ang(0,0,0)))
+    holoParent(A,holoEntity(0))
+    holoSkin(A,1)
+    
+
+}
+if(clk("parent")){ LampE = Lamp:entity() if(!LampE:parent():isValid()){ LampE:parentTo(holoEntity(1))}}
+
+
+interval(1000)
+Driver = Pod:driver()
+runOnKeys(Driver,1)
+if (Driver:keyAttack1()) {On = !On Lamp["On", number ] = On holoSkin(1,!On)}
+if(Driver:keyPressed("w")) {interval(10) holoAng(1,holoEntity(1):toWorld(ang(-1,0,0)))}
+if(Driver:keyPressed("s")) {interval(10) holoAng(1,holoEntity(1):toWorld(ang(1,0,0)))}
+if(Driver:keyPressed("a")) {interval(10) holoAng(0,holoEntity(0):toWorld(ang(0,1,0)))}
+if(Driver:keyPressed("d")) {interval(10) holoAng(0,holoEntity(0):toWorld(ang(0,-1,0)))}

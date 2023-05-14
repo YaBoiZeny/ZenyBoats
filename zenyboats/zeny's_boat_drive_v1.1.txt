@@ -1,0 +1,183 @@
+@name Zeny's Boat drive
+@inputs Driverseat:entity Base:entity Barrels:array On Freeze
+@outputs Driver:entity Throttle Speed Sink Barrelcount Go  MatCount Submaterial:array CurMat:string
+@persist Throttle BarrelOld Sink Spawned B Go A WreckMats:array FreezeBoat
+@trigger 
+
+
+
+ThrustForce = 10000 #this is the value that the throttle gets multiplied by to get the amount of force applied 
+SteerForce = 750 #force multiplier for steering, recommended to be higher for larger vessels
+MaxSpeed = 20 #max Speed in mph
+EngineSound = "ambient/machines/diesel_engine_idle1.wav" #engine sound
+RandomSinkEvent = 1 #if set to 1 there is a 1/100000 chance the ship will sink at any given moment, it does not care if the boat is off so TURN OFF WHILE WORKING ON THE BOAT!! 
+
+
+
+#[	INSTRUCTIONS
+	-wire Driverseat[ENTITY] to Pod[ENTITY] on a pod controller (or directly to Create Entity[ENTITY] on the seat, either works)
+	-wire Base[ENTITY] to CreateEntity[ENTITY] on the boat prop itself
+	-wire On to a toggle button
+	
+	OPTIONAL:
+	-wire Freeze to a non toggle output (this will freeze/unfreeze the boat, highly recommended if your boat has any cranes and such)
+	
+	REQUIRED FOR SINKING, BUT ULTIMATELY OPTIONAL:
+	-weld explosive barrels along the waterline of the ship (use weight tool to make them very heavy, >25000 works well, boat itself should not be bouyant)
+	-mark all barrels with an advanced entity marker
+	-wire Barrels[ARRAY] to Entities[ARRAY] on the entity marker
+
+	TROUBLESHOOTING:
+	Boat creeks as if sinking immediately after spawn, later becomes a wreck, despite never actually sinking:
+	-refresh the E2 and resave the boat, should fix it.
+]#
+
+
+
+
+
+
+
+if(first()|dupefinished()) {BarrelOld = 0 Base:soundPlay(0,0,"vehicles/airboat/pontoon_fast_water_loop2.wav") 
+        Submaterial = Base:getMaterials()
+    MatCount = Submaterial:count()
+    entity():soundPlay(1,0,EngineSound) soundLevel(0,85) Sink = 0 timer("spawn",5000)
+    B = 3 Go = 0}
+   
+if(clk("spawn")) {
+    Spawned = 1}
+  
+ interval(100)  
+
+Speed = entity():velL():z()
+SpeedMPH = Speed/17.6
+soundVolume(0,Speed*0.004)
+Driver = Driverseat:driver()
+Forward = -entity():up()
+Right = -entity():right()
+if(On == 1 & Sink == 0 ) {
+    soundVolume(1,100)
+if (Driver:keyPressed("w")) {
+   Throttle++
+    
+}
+if (changed(Freeze) & Freeze == 1) { FreezeBoat = !FreezeBoat }
+if (changed(FreezeBoat) & FreezeBoat == 1) {Base:propFreeze(1)}
+elseif (changed(FreezeBoat) & FreezeBoat == 0) {Base:propFreeze(0)}
+
+if (Driver:keyPressed("s")) {
+    Throttle--
+}
+    
+
+if (Driver:keyPressed("d")) {
+    Base:applyOffsetForce(Right*Speed*SteerForce,Base:toWorld(Base:toLocal(entity():pos())))
+    
+}
+
+if (Driver:keyPressed("a")) {
+    Base:applyOffsetForce(-Right*Speed*SteerForce, Base:toWorld(Base:toLocal(entity():pos())))
+    
+}
+if (Driver:keyPressed("space")) {
+   Throttle = 0
+    
+}
+if(Throttle > 50) {
+    Throttle = 50
+}
+if(Throttle < -50) {
+    Throttle = -50
+}
+if(Throttle < 0) {ThrottleS = 0 - Throttle}
+else{ThrottleS = Throttle}
+if(SpeedMPH < MaxSpeed) {
+    
+Base:applyForce(Forward*Throttle*ThrustForce)
+}
+
+soundPitch(1,100+ThrottleS*2)
+}
+else{Throttle = 0 
+    soundVolume(1,0)
+}
+
+#Zeny
+#SINKING CODE SINKING CODE
+if(Spawned == 1) {
+    
+    NewlyDedLarge = array("ambient/machines/floodgate_move_short1.wav","ambient/materials/shipgroan2.wav","ambient/materials/shipgroan4.wav")
+    DyingLarge = array("ambient/materials/shipgroan1.wav","ambient/materials/shipgroan2.wav","ambient/materials/shipgroan3.wav","ambient/materials/shipgroan4.wav","ambient/machines/floodgate_move_short1.wav")
+Barrelcount = Barrels:count()
+if(BarrelOld < Barrelcount) { BarrelOld = Barrelcount}
+if(BarrelOld > Barrelcount) {
+    if(Base:mass()> 35000& Sink == 0 ) {
+    timer("sunk?",120000)
+    Base:soundPlay(2,0,NewlyDedLarge:string(randint(1,NewlyDedLarge:count())))
+    soundLevel(2,90)
+    Sink = 1
+}
+    
+    }
+
+if(RandomSinkEvent == 1) {
+    SinkorSwim = randint(0,100000)
+}
+if(SinkorSwim == 10000) {
+    ByeBarrel = randint(1,Barrelcount)
+    Barrels:entity(ByeBarrel):propBreak()
+    
+}
+if(Sink == 1) {
+    Base:applyForce(vec(0,0,1))
+    Base:applyForce(vec(0,0,-1))
+    Noise = randint(0,100)
+    if(Noise == 100 & Base:mass() > 35000) {
+        Base:soundPlay(B,0,DyingLarge:string(randint(1,DyingLarge:count())))
+        soundLevel(B,85)
+        B++
+        if(B > 10) {B = 3}
+    }
+    On = 0
+  SinkBarrel = randint(1,Barrelcount)
+SonkB = Barrels:entity(SinkBarrel)
+SonkB:setMass(SonkB:mass()-100)
+if(SonkB:mass() < 20) { SonkB:propBreak()}
+
+    }
+
+
+}
+if(clk("sunk?")) {
+  if(Speed < 1) {
+    timer("sunk",120000)
+}
+else { timer("sunk?",5000)}   
+}
+
+if(clk("sunk")) {
+    Go = 1
+    A = 0
+
+    WreckMats = array("models/props_pipes/pipesystem01a_skin2","models/props_pipes/pipesystem01a_skin2","models/props_c17/metalladder002",
+    "models/props_canal/canal_bridge_railing_01b","models/props_canal/canal_bridge_railing_01a")
+
+    Base:propFreeze(1)
+    Base:setPos(Base:pos() - vec(0,0,randint(10,70)))
+    
+    for (I = 1, MatCount, 1){
+    CurMat = Submaterial:string(I)
+    if (!CurMat:find("glass") & !CurMat:find("rail")) {
+        Base:setSubMaterial(I,WreckMats:string(randint(1,WreckMats:count())))
+    }
+    elseif(CurMat:find("glass")){
+        Base:setSubMaterial(I,"color")
+    }
+    }
+}
+
+
+
+
+
+
