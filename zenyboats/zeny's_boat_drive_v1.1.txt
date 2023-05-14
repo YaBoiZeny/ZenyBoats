@@ -15,6 +15,7 @@ RandomSinkEvent = 1 #if set to 1 there is a 1/100000 chance the ship will sink a
 
 
 #[	INSTRUCTIONS
+	-place e2 on the stern of the boat, facing backwards
 	-wire Driverseat[ENTITY] to Pod[ENTITY] on a pod controller (or directly to Create Entity[ENTITY] on the seat, either works)
 	-wire Base[ENTITY] to CreateEntity[ENTITY] on the boat prop itself
 	-wire On to a toggle button
